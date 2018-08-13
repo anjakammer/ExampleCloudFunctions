@@ -1,5 +1,6 @@
 const requestp = require('request-promise')
 const jwt = require('jsonwebtoken')
+const redis = require('redis');
 
 exports.buildRunner = (req, res) => {
 
@@ -13,7 +14,7 @@ exports.buildRunner = (req, res) => {
       expiresIn: '10m'
     })
 
-  const updateCheckRun = (owner, repo, body, token, check_run_id) =>
+  const updateCheckRun = (owner, repo, head_sha, token, check_run_id) =>
     requestp({
       json: true,
       headers: {
@@ -23,8 +24,32 @@ exports.buildRunner = (req, res) => {
       },
       method: 'PATCH',
       url: `https://api.github.com/repos/${owner}/${repo}/check-runs/${check_run_id}`,
-      body: body
-    })
+      body: {
+        "name": "Build",
+        "head_sha": head_sha,
+        "status": "in_progress",
+        "started_at": "2018-05-04T01:15:52Z",
+        "output": {
+          "title": "Build report",
+          "summary": "A summery of the build report",
+          "text": "The console output"
+        },
+        "actions": [{
+          "label": "abort",
+          "identifier": "abort_run",
+          "description": "cancel this build"
+        }, {
+          "label": "re-run",
+          "identifier": "re-run",
+          "description": "runs this build again"
+        }]
+      }
+    }).then(
+      redisClient.hmset(
+        head_sha, "owner", owner, "repo", repo, "check_run_id",
+        check_run_id, "status", "in_progress"
+      )
+    )
 
   const installationToken = (installationId) => requestp({
     url: `https://api.github.com/installations/${installationId}/access_tokens`,
@@ -37,7 +62,18 @@ exports.buildRunner = (req, res) => {
     method: 'POST'
   })
 
-  console.log(req, res)
+  // [START client]
+  // Connect to a redis server provisioned over at
+  // Redis Labs. See the README for more info.
+  const redisClient = redis.createClient(
+    process.env.REDIS_PORT,
+    process.env.REDIS_HOST, {
+      'auth_pass': process.env.REDIS_KEY,
+      'return_buffers': true
+    }
+  ).on('error', (err) => console.error('ERR:REDIS:', err));
+  // [END client]
+
   if (req.body === undefined) {
     res.status(400).send('No message defined!')
   } else {
@@ -48,31 +84,10 @@ exports.buildRunner = (req, res) => {
         .then(({
           token
         }) => {
-          const body = {
-            "name": "Build",
-            "head_sha": payload.head_sha,
-            "status": "in_progress",
-            "external_id": "42",
-            "started_at": "2018-05-04T01:15:52Z",
-            "output": {
-              "title": "Build report",
-              "summary": "A summery of the build report",
-              "text": "The console output"
-            },
-            "actions": [{
-              "label": "abort",
-              "identifier": "abort_run",
-              "description": "cancel this check"
-            }, {
-              "label": "notify me",
-              "identifier": "notify_me",
-              "description": "sends a notification for status updates"
-            }]
-          }
           return updateCheckRun(
             payload.owner,
             payload.repo,
-            body,
+            payload.head_sha,
             token,
             payload.check_run_id
           )

@@ -9,3 +9,6 @@
 | `TEST_TRIGGER`  | Trigger url             |
 | `DEPLOY_TRIGGER`| Trigger url             |
 | `PDTEST_TRIGGER`| Trigger url             |
+| `REDIS_HOST`    | redisHost               |
+| `REDIS_PORT`    | redisPort               |
+| `REDIS_KEY`     | redisKey                |

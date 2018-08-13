@@ -1,9 +1,10 @@
 {
-  "name": "github-app",
+  "name": "build-runner",
   "version": "0.0.1",
   "dependencies": {
-    "request" : "2.88.0",
+    "request": "2.88.0",
     "request-promise": "4.2.2",
-    "jsonwebtoken": "8.3.0"
+    "jsonwebtoken": "8.3.0",
+    "redis": "2.8.0"
   }
 }

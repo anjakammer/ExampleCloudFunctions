@@ -14,11 +14,16 @@ exports.checkRunner = (req, res) => {
     })
 
   const queueAllChecks = (owner, repo, installation, topics, head_sha, token) => {
+    console.log("queueAllChecks")
     topics.forEach(topic =>
-        createCheckRun(owner, repo, topic, head_sha, token)
-      )
-      // TODO triggerBuild(owner, repo, head_sha, installation, check_run_id)
-      // TODO need to get the id from the creation response :/
+      createCheckRun(owner, repo, topic, head_sha, token)
+      .then(response => {
+        console.log(topic)
+        if (topic === "Build") {
+          triggerBuild(owner, repo, head_sha, installation, response.id)
+        }
+      })
+    )
   }
 
   const createCheckRun = (owner, repo, topic, head_sha, token) =>
@@ -41,6 +46,9 @@ exports.checkRunner = (req, res) => {
           "description": "cancel this"
         }]
       }
+    }).then(response => {
+      console.log(response)
+      return response
     })
 
   const triggerBuild = (owner, repo, head_sha, installation, check_run_id) =>
@@ -56,7 +64,13 @@ exports.checkRunner = (req, res) => {
         "head_sha": head_sha,
         "installation": installation
       }
+    }).then(response => {
+      console.log(response)
+      return response
     })
+    .catch(error => {
+      console.error(error)
+    });
 
   const installationToken = (installationId) => requestp({
     url: `https://api.github.com/installations/${installationId}/access_tokens`,
@@ -82,7 +96,10 @@ exports.checkRunner = (req, res) => {
           return queueAllChecks(
             payload.repository.owner.login,
             payload.repository.name,
-            payload.installation.id, ['Build', 'Test', 'Deployment',
+            payload.installation.id, [
+              'Build',
+              'Test',
+              'Deployment',
               'Post-Deployment Test'
             ],
             payload.check_suite.head_sha,
