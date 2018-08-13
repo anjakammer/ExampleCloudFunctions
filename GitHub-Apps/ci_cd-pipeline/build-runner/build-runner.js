@@ -44,12 +44,13 @@ exports.buildRunner = (req, res) => {
           "description": "runs this build again"
         }]
       }
-    }).then(
+    }).then({
       redisClient.hmset(
         head_sha, "owner", owner, "repo", repo, "check_run_id",
         check_run_id, "status", "in_progress"
       )
-    )
+      redisClient.quit()
+    })
 
   const installationToken = (installationId) => requestp({
     url: `https://api.github.com/installations/${installationId}/access_tokens`,
