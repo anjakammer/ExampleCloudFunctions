@@ -1,5 +1,6 @@
 const requestp = require('request-promise')
 const jwt = require('jsonwebtoken')
+const eachSeries = require('async/eachSeries')
 
 exports.checkRunner = (req, res) => {
 
@@ -15,15 +16,18 @@ exports.checkRunner = (req, res) => {
 
   const queueAllChecks = (owner, repo, installation, topics, head_sha, token) => {
     console.log("queueAllChecks")
-    topics.forEach(topic =>
-      createCheckRun(owner, repo, topic, head_sha, token)
-      .then(response => {
-        console.log(topic)
-        if (topic === "Build") {
-          triggerBuild(owner, repo, head_sha, installation, response.id)
-        }
-      })
-    )
+    eachSeries(topics, (topic, next) => {
+      console.log(next)
+      return createCheckRun(owner, repo, topic, head_sha, token)
+        .then(response => {
+          console.log(topic)
+          if (topic === "Build") {
+            triggerBuild(owner, repo, head_sha, installation,
+              response.id)
+          }
+          next()
+        })
+    })
   }
 
   const createCheckRun = (owner, repo, topic, head_sha, token) =>
