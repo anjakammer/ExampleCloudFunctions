@@ -3,27 +3,25 @@ const jwt = require('jsonwebtoken')
 const eachSeries = require('async/eachSeries')
 
 exports.checkRunner = (req, res) => {
-
-  const cert = process.env.PRIVATE_KEY.replace(/###n/g, '\n');
+  const cert = process.env.PRIVATE_KEY.replace(/###n/g, '\n')
 
   const webToken = jwt.sign({
-      iss: process.env.APP_ID
-    },
+    iss: process.env.APP_ID
+  },
     cert, {
       algorithm: 'RS256',
       expiresIn: '10m'
     })
 
   const queueAllChecks = (owner, repo, installation, topics, head_sha, token) => {
-    console.log("queueAllChecks")
+    console.log('queueAllChecks')
     eachSeries(topics, (topic, next) => {
-      console.log(next)
       return createCheckRun(owner, repo, topic, head_sha, token)
         .then(response => {
           console.log(topic)
-          if (topic === "Build") {
+          if (topic === 'Build') {
             triggerBuild(owner, repo, head_sha, installation,
-              response.id)
+              response.id, 'in_progress')
           }
           next()
         })
@@ -41,40 +39,42 @@ exports.checkRunner = (req, res) => {
       method: 'POST',
       url: `https://api.github.com/repos/${owner}/${repo}/check-runs`,
       body: {
-        "name": topic,
-        "head_sha": head_sha,
-        "status": "queued",
-        "actions": [{
-          "label": "abort",
-          "identifier": "abort_run",
-          "description": "cancel this"
+        'name': topic,
+        'head_sha': head_sha,
+        'status': 'queued',
+        'actions': [{
+          'label': 'abort',
+          'identifier': 'abort_run',
+          'description': 'cancel this'
         }]
       }
     }).then(response => {
       console.log(response)
       return response
+    }).catch(error => {
+      console.error(error)
     })
 
-  const triggerBuild = (owner, repo, head_sha, installation, check_run_id) =>
+  const triggerBuild = (owner, repo, head_sha, installation, check_run_id,
+      action) =>
     requestp({
       json: true,
       method: 'POST',
       url: process.env.BUILD_TRIGGER,
       body: {
-        "action": "queue",
-        "check_run_id": check_run_id,
-        "owner": owner,
-        "repo": repo,
-        "head_sha": head_sha,
-        "installation": installation
+        'action': action,
+        'check_run_id': check_run_id,
+        'owner': owner,
+        'repo': repo,
+        'head_sha': head_sha,
+        'installation': installation
       }
     }).then(response => {
       console.log(response)
       return response
-    })
-    .catch(error => {
+    }).catch(error => {
       console.error(error)
-    });
+    })
 
   const installationToken = (installationId) => requestp({
     url: `https://api.github.com/installations/${installationId}/access_tokens`,
@@ -92,7 +92,7 @@ exports.checkRunner = (req, res) => {
   } else {
     const payload = req.body
     if (payload.action === 'requested') {
-      res.status(200).send('OK');
+      res.status(200).send('OK')
       installationToken(payload.installation.id)
         .then(({
           token
@@ -110,6 +110,22 @@ exports.checkRunner = (req, res) => {
             token
           )
         })
+    } else if (
+      payload.action === 'requested_action' && payload.check_run.name ===
+      'Build'
+    ) {
+      res.status(200).send('OK')
+      console.log('requested costum action: ' + payload.requested_action.identifier)
+      return triggerBuild(
+        payload.repository.owner.login,
+        payload.repository.name,
+        payload.check_run.head_sha,
+        payload.installation.id,
+        payload.check_run.id,
+        payload.requested_action.identifier
+      )
+    } else {
+      res.status(200).send('skipped this action')
     }
   }
 }
