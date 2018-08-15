@@ -1,4 +1,4 @@
-### Required Environment Variables
+## Required Environment Variables
 
 | Key             | Description             |
 | ----------------|-------------------------|
@@ -14,8 +14,8 @@
 | `REDIS_KEY`     | redisKey                |
 
 
-### Architecture
+## Architecture
 
-## Check-Runner
-Che `check-runner` is the gateway between GitHub and all services which trigger the steps of the ci/cd pipeline.
+### Check-Runner
+The `check-runner` is the gateway between GitHub and all services which trigger all steps of the ci/cd pipeline.
 All GitHub hooks come in through the `check-runner`, which is validating the call, and triggers other functions accordingly.
