@@ -18,6 +18,7 @@ exports.autoComment = (req, res) => {
       json: true,
       headers: {
         'Authorization': 'token ' + token,
+        'User-Agent': process.env.APP_NAME,
         'Accept': 'application/vnd.github.machine-man-preview+json'
       },
       method: 'POST',
@@ -32,6 +33,7 @@ exports.autoComment = (req, res) => {
     json: true,
     headers: {
       'Authorization': 'Bearer ' + webToken,
+      'User-Agent': process.env.APP_NAME,
       'Accept': 'application/vnd.github.machine-man-preview+json'
     },
     method: 'POST'
