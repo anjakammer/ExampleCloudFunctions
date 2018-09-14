@@ -1,4 +1,8 @@
-### comments for newly opened issues with 'yeah baby!'
+# will label the issue by command
+## Available commands
+- Help
+- Bug
+- Feature
 
 ## Required Environment Variables
 

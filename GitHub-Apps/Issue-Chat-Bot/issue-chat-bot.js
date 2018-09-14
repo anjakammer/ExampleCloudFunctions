@@ -1,32 +1,28 @@
 const requestp = require('request-promise')
 const jwt = require('jsonwebtoken')
 
-exports.autoComment = (req, res) => {
-
-  const cert = process.env.PRIVATE_KEY.replace(/###n/g, '\n');
+exports.main = (req, res) => {
+  const cert = process.env.PRIVATE_KEY.replace(/###n/g, '\n')
 
   const webToken = jwt.sign({
-      iss: process.env.APP_ID
-    },
-    cert, {
-      algorithm: 'RS256',
-      expiresIn: '10m'
-    })
+    iss: process.env.APP_ID
+  },
+  cert, {
+    algorithm: 'RS256',
+    expiresIn: '10m'
+  })
 
-  const addComment = (url, body, token) =>
-    requestp({
-      json: true,
-      headers: {
-        'Authorization': 'token ' + token,
-        'User-Agent': process.env.APP_NAME,
-        'Accept': 'application/vnd.github.machine-man-preview+json'
-      },
-      method: 'POST',
-      url,
-      body: {
-        body
-      }
-    })
+  const postRequest = (url, body, token) => requestp({
+    url,
+    json: true,
+    headers: {
+      'Authorization': 'token ' + token,
+      'User-Agent': process.env.APP_NAME,
+      'Accept': 'application/vnd.github.machine-man-preview+json'
+    },
+    method: 'POST',
+    body
+  })
 
   const installationToken = (installationId) => requestp({
     url: `https://api.github.com/installations/${installationId}/access_tokens`,
@@ -39,7 +35,7 @@ exports.autoComment = (req, res) => {
     method: 'POST'
   })
 
-  const getRequest = (payload) => {
+  const getInput = (payload) => {
     if (payload.action === 'opened') {
       return payload.issue.body
     } else if (payload.action === 'created') {
@@ -47,38 +43,40 @@ exports.autoComment = (req, res) => {
     }
   }
 
-  const getResponse = (request) => {
-    request = request.toLowerCase()
+  const sendReaction = (payload, token) => {
+    const request = getInput(payload).toLowerCase()
     let response = 'I don\'t understand what you mean.'
+    let newLabel = ''
 
-    if (request.includes("help")) {
-      response = 'This is your Help. What do you want to do? "Report a Bug" or  "Request a Feature"'
-    } else if(request.includes('bug')) {
-      response = 'go left to "Labels" > "bug"'
-    } else if(request.includes('feature')) {
-      response = 'go left to "Labels" > "enhancement"'
+    if (request.includes('help')) {
+      response = { 'body': 'This is your Help. What do you want to do? "Report a Bug" or  "Request a Feature"' }
+    } else if (request.includes('bug')) {
+      newLabel = 'bug'
+    } else if (request.includes('feature')) {
+      newLabel = 'enhancement'
     }
 
-    return response
+    if (newLabel !== '') {
+      response = { 'body': `I will add the '${newLabel}' label for you.` }
+      postRequest(`${payload.issue.url}/labels`, [newLabel], token)
+    }
+
+    postRequest(payload.issue.comments_url, response, token)
   }
 
-  console.log(req, res)
   if (req.body === undefined) {
     res.status(400).send('No message defined!')
   } else {
     const payload = req.body
     if (payload.sender.type !== 'User') {
-      res.status(200).send('Wrong User type');
-      return
+      return res.status(200).send('Wrong user type. No action required.')
     }
     installationToken(payload.installation.id)
       .then(({
         token
       }) => {
-        res.status(200).send('OK');
-        const request = getRequest(payload)
-        const response = getResponse(request)
-        return addComment(payload.issue.comments_url, response, token)
-    })
+        sendReaction(payload, token)
+        return res.status(200).send('OK')
+      })
   }
 }
