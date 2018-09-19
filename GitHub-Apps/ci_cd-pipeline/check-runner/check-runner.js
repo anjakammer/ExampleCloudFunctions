@@ -8,19 +8,19 @@ exports.checkRunner = (req, res) => {
   const webToken = jwt.sign({
     iss: process.env.APP_ID
   },
-    cert, {
-      algorithm: 'RS256',
-      expiresIn: '10m'
-    })
+  cert, {
+    algorithm: 'RS256',
+    expiresIn: '10m'
+  })
 
-  const queueAllChecks = (owner, repo, installation, topics, head_sha, token) => {
+  const queueAllChecks = (owner, repo, installation, topics, headSha, token) => {
     console.log('queueAllChecks')
     eachSeries(topics, (topic, next) => {
-      return createCheckRun(owner, repo, topic, head_sha, token)
+      return createCheckRun(owner, repo, topic, headSha, token)
         .then(response => {
           console.log(topic)
           if (topic === 'Build') {
-            triggerBuild(owner, repo, head_sha, installation,
+            triggerBuild(owner, repo, headSha, installation,
               response.id, 'in_progress')
           }
           next()
@@ -28,7 +28,7 @@ exports.checkRunner = (req, res) => {
     })
   }
 
-  const createCheckRun = (owner, repo, topic, head_sha, token) =>
+  const createCheckRun = (owner, repo, topic, headSha, token) =>
     requestp({
       json: true,
       headers: {
@@ -40,7 +40,7 @@ exports.checkRunner = (req, res) => {
       url: `https://api.github.com/repos/${owner}/${repo}/check-runs`,
       body: {
         'name': topic,
-        'head_sha': head_sha,
+        'head_sha': headSha,
         'status': 'queued',
         'actions': [{
           'label': 'abort',
@@ -55,18 +55,18 @@ exports.checkRunner = (req, res) => {
       console.error(error)
     })
 
-  const triggerBuild = (owner, repo, head_sha, installation, check_run_id,
-      action) =>
+  const triggerBuild = (owner, repo, headSha, installation, checkRunId,
+    action) =>
     requestp({
       json: true,
       method: 'POST',
       url: process.env.BUILD_TRIGGER,
       body: {
         'action': action,
-        'check_run_id': check_run_id,
+        'check_run_id': checkRunId,
         'owner': owner,
         'repo': repo,
-        'head_sha': head_sha,
+        'head_sha': headSha,
         'installation': installation
       }
     }).then(response => {

@@ -8,26 +8,25 @@ exports.buildRunner = (req, res) => {
   const webToken = jwt.sign({
     iss: process.env.APP_ID
   },
-    cert, {
-      algorithm: 'RS256',
-      expiresIn: '10m'
-    })
+  cert, {
+    algorithm: 'RS256',
+    expiresIn: '10m'
+  })
 
   // [START client]
   // Connect to a redis server provisioned over at
   // Redis Labs. See the README for more info.
   const redisClient = redis.createClient(
-      process.env.REDIS_PORT,
-      process.env.REDIS_HOST, {
-        'auth_pass': process.env.REDIS_KEY,
-        'return_buffers': true
-      }
-    )
+    process.env.REDIS_PORT,
+    process.env.REDIS_HOST, {
+      'auth_pass': process.env.REDIS_KEY,
+      'return_buffers': true
+    })
     .on('error', (err) => console.error('ERR:REDIS:', err))
     // [END client]
 
-  const updateCheckRun = (owner, repo, head_sha, token, check_run_id, status,
-      conclusion, completed_at) =>
+  const updateCheckRun = (owner, repo, headSha, token, checkRunId, status,
+    conclusion, completedAt) =>
     requestp({
       json: true,
       headers: {
@@ -36,14 +35,14 @@ exports.buildRunner = (req, res) => {
         'Accept': 'application/vnd.github.antiope-preview+json'
       },
       method: 'PATCH',
-      url: `https://api.github.com/repos/${owner}/${repo}/check-runs/${check_run_id}`,
+      url: `https://api.github.com/repos/${owner}/${repo}/check-runs/${checkRunId}`,
       body: {
         'name': 'Build',
-        'head_sha': head_sha,
+        'head_sha': headSha,
         'status': status,
         'conclusion': conclusion,
         'started_at': '2018-05-04T01:15:52Z',
-        'completed_at': completed_at,
+        'completed_at': completedAt,
         'output': {
           'title': 'Build report',
           'summary': 'A summery of the build report',
@@ -58,8 +57,8 @@ exports.buildRunner = (req, res) => {
     }).then((response) => {
       // TODO check for successful response (status code)
       redisClient.hmset(
-        head_sha, 'owner', owner, 'repo', repo, 'step', 'build',
-        'check_run_id', check_run_id, 'status', status, 'conclusion',
+        headSha, 'owner', owner, 'repo', repo, 'step', 'build',
+        'check_run_id', checkRunId, 'status', status, 'conclusion',
         conclusion)
     }).then(() => redisClient.quit())
 
@@ -88,11 +87,11 @@ exports.buildRunner = (req, res) => {
         }) => {
           let status = payload.action
           let conclusion = ''
-          let completed_at = ''
+          let completedAt = ''
           if (status === 'abort_run') {
             status = 'completed'
             conclusion = 'cancelled'
-            completed_at = '2018-05-05T01:15:52Z'
+            completedAt = '2018-05-05T01:15:52Z'
           }
           return updateCheckRun(
             payload.owner,
@@ -102,7 +101,7 @@ exports.buildRunner = (req, res) => {
             payload.check_run_id,
             status,
             conclusion,
-            completed_at
+            completedAt
           )
         })
     }

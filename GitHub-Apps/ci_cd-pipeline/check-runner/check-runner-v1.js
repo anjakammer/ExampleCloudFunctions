@@ -2,16 +2,15 @@ const requestp = require('request-promise')
 const jwt = require('jsonwebtoken')
 
 exports.checkRunner = (req, res) => {
-
-  const cert = process.env.PRIVATE_KEY.replace(/###n/g, '\n');
+  const cert = process.env.PRIVATE_KEY.replace(/###n/g, '\n')
 
   const webToken = jwt.sign({
-      iss: process.env.APP_ID
-    },
-    cert, {
-      algorithm: 'RS256',
-      expiresIn: '10m'
-    })
+    iss: process.env.APP_ID
+  },
+  cert, {
+    algorithm: 'RS256',
+    expiresIn: '10m'
+  })
 
   const createCheckRun = (owner, repo, body, token) =>
     requestp({
@@ -43,30 +42,30 @@ exports.checkRunner = (req, res) => {
   } else {
     const payload = req.body
     if (payload.action === 'requested') {
-      res.status(200).send('OK');
+      res.status(200).send('OK')
       installationToken(payload.installation.id)
         .then(({
           token
         }) => {
           const body = {
-            "name": "mighty_readme",
-            "head_sha": payload.check_suite.head_sha,
-            "status": "in_progress",
-            "external_id": "42",
-            "started_at": "2018-05-04T01:14:52Z",
-            "output": {
-              "title": "Mighty Readme report",
-              "summary": "A Summery",
-              "text": "the text"
+            'name': 'mighty_readme',
+            'head_sha': payload.check_suite.head_sha,
+            'status': 'in_progress',
+            'external_id': '42',
+            'started_at': '2018-05-04T01:14:52Z',
+            'output': {
+              'title': 'Mighty Readme report',
+              'summary': 'A Summery',
+              'text': 'the text'
             },
-            "actions": [{
-              "label": "abort",
-              "identifier": "abort_run",
-              "description": "cancel this check"
+            'actions': [{
+              'label': 'abort',
+              'identifier': 'abort_run',
+              'description': 'cancel this check'
             }, {
-              "label": "notify me",
-              "identifier": "notify_me",
-              "description": "sends a notification for status updates"
+              'label': 'notify me',
+              'identifier': 'notify_me',
+              'description': 'sends a notification for status updates'
             }]
           }
           return createCheckRun(
