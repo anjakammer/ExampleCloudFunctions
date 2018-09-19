@@ -1,2 +1,2 @@
 # ExampleCloudFunctions
-A collection of example Google Cloud Functions
+## A collection of example Google Cloud Functions
