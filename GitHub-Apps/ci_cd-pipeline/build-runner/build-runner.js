@@ -39,8 +39,8 @@ exports.buildRunner = (req, res) => {
       body: {
         'name': 'Build',
         'head_sha': headSha,
-        'status': status,
-        'conclusion': conclusion,
+        status,
+        conclusion,
         'started_at': '2018-05-04T01:15:52Z',
         'completed_at': completedAt,
         'output': {

@@ -22,7 +22,7 @@ exports.checkRunner = (req, res) => {
       },
       method: 'POST',
       url: `https://api.github.com/repos/${owner}/${repo}/check-runs`,
-      body: body
+      body
     })
 
   const installationToken = (installationId) => requestp({

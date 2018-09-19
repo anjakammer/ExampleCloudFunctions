@@ -13,21 +13,6 @@ exports.checkRunner = (req, res) => {
     expiresIn: '10m'
   })
 
-  const queueAllChecks = (owner, repo, installation, topics, headSha, token) => {
-    console.log('queueAllChecks')
-    eachSeries(topics, (topic, next) => {
-      return createCheckRun(owner, repo, topic, headSha, token)
-        .then(response => {
-          console.log(topic)
-          if (topic === 'Build') {
-            triggerBuild(owner, repo, headSha, installation,
-              response.id, 'in_progress')
-          }
-          next()
-        })
-    })
-  }
-
   const createCheckRun = (owner, repo, topic, headSha, token) =>
     requestp({
       json: true,
@@ -62,19 +47,34 @@ exports.checkRunner = (req, res) => {
       method: 'POST',
       url: process.env.BUILD_TRIGGER,
       body: {
-        'action': action,
+        action,
         'check_run_id': checkRunId,
-        'owner': owner,
-        'repo': repo,
+        owner,
+        repo,
         'head_sha': headSha,
-        'installation': installation
+        installation
       }
-    }).then(response => {
+    }).then((response) => {
       console.log(response)
       return response
-    }).catch(error => {
+    }).catch((error) => {
       console.error(error)
     })
+
+  const queueAllChecks = (owner, repo, installation, topics, headSha, token) => {
+    console.log('queueAllChecks')
+    eachSeries(topics, (topic, next) => {
+      return createCheckRun(owner, repo, topic, headSha, token)
+        .then((response) => {
+          console.log(topic)
+          if (topic === 'Build') {
+            triggerBuild(owner, repo, headSha, installation,
+              response.id, 'in_progress')
+          }
+          next()
+        })
+    })
+  }
 
   const installationToken = (installationId) => requestp({
     url: `https://api.github.com/installations/${installationId}/access_tokens`,
