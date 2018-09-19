@@ -38,7 +38,7 @@ exports.main = (req, res) => {
   })
 
   console.log(req, res)
-  if (req.body === undefined) {
+  if (typeof req.body === 'undefined') {
     res.status(400).send('No message defined!')
   } else {
     const payload = req.body

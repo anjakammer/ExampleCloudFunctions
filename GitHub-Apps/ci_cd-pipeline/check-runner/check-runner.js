@@ -33,10 +33,10 @@ exports.checkRunner = (req, res) => {
           'description': 'cancel this'
         }]
       }
-    }).then(response => {
+    }).then((response) => {
       console.log(response)
       return response
-    }).catch(error => {
+    }).catch((error) => {
       console.error(error)
     })
 
@@ -87,7 +87,7 @@ exports.checkRunner = (req, res) => {
     method: 'POST'
   })
 
-  if (req.body === undefined) {
+  if (typeof req.body === 'undefined') {
     res.status(400).send('No message defined!')
   } else {
     const payload = req.body

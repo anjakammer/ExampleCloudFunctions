@@ -73,12 +73,12 @@ exports.buildRunner = (req, res) => {
     method: 'POST'
   })
 
-  if (req.body === undefined) {
+  if (typeof req.body === 'undefined') {
     res.status(400)
       .send('No message defined!')
   } else {
     const payload = req.body
-    if (payload.action !== undefined) {
+    if (typeof payload.action !== 'undefined') {
       res.status(200)
         .send('OK')
       installationToken(payload.installation)
