@@ -1,0 +1,48 @@
+swagger: "2.0"
+info:
+  title: "CI/CD API"
+  description: "This is the API Gateway description for the CI/CD system"
+  version: "1.0.0"
+host: "api.example.com"
+schemes:
+  - "https"
+paths:
+  /run-pipeline:
+    post:
+      description: "Triggers the pipeline for the current commit"
+      operationId: "run-pipeline"
+      consumes:
+        - "application/json"
+      responses:
+        202:
+          description: "Accepted"
+        400:
+          description: "No message defined!"
+        404:
+          description: "No such build"
+  /rerun-pipeline:
+    post:
+      description: "Aborts the pipeline and restart it."
+      operationId: "rerun-pipeline"
+      consumes:
+        - "application/json"
+      responses:
+        202:
+          description: "Accepted"
+        400:
+          description: "No message defined!"
+        404:
+          description: "No such build"
+  /abort-build:
+    post:
+      description: "Aborts the build."
+      operationId: "rerun-pipeline"
+      consumes:
+        - "application/json"
+      responses:
+        202:
+          description: "Accepted"
+        400:
+          description: "No message defined!"
+        404:
+          description: "No such build"
