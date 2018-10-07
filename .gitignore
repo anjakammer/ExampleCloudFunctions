@@ -5,6 +5,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 output.txt
+output.yaml
 
 # Runtime data
 pids
