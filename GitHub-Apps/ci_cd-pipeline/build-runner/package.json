@@ -4,7 +4,6 @@
   "dependencies": {
     "request": "2.88.0",
     "request-promise": "4.2.2",
-    "jsonwebtoken": "8.3.0",
-    "redis": "2.8.0"
+    "jsonwebtoken": "8.3.0"
   }
 }

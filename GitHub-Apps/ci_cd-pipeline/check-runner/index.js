@@ -41,7 +41,7 @@ exports.createCheckRun = (owner, repo, topic, headSha, token) =>
       'status': 'queued',
       'actions': [{
         'label': 'abort',
-        'identifier': 'abort_run',
+        'identifier': `abort_${topic.toLowerCase()}`,
         'description': 'cancel this'
       }]
     }
@@ -106,7 +106,7 @@ exports.main = (req, res) => {
               'Build',
               'Test',
               'Deployment',
-              'Post-Deployment Test'
+              'Post-Deployment-Test'
             ],
             payload.check_suite.head_sha,
             token

@@ -1,6 +1,5 @@
 const requestp = require('request-promise')
 const jwt = require('jsonwebtoken')
-const redis = require('redis')
 
 exports.webToken = () => {
   const cert = process.env.PRIVATE_KEY.replace(/###n/g, '\n')
@@ -25,20 +24,7 @@ exports.installationToken = (installationId) => requestp({
   method: 'POST'
 })
 
-// [START client]
-// Connect to a redis server provisioned over at
-// Redis Labs. See the README for more info.
-exports.redisClient = redis.createClient(
-  process.env.REDIS_PORT,
-  process.env.REDIS_HOST, {
-    'auth_pass': process.env.REDIS_KEY,
-    'return_buffers': true
-  })
-  .on('error', (err) => console.error('ERR:REDIS:', err))
-  // [END client]
-
-exports.updateCheckRun = (owner, repo, headSha, token, checkRunId, status,
-  conclusion, completedAt) =>
+exports.updateCheckRun = (owner, repo, headSha, token, checkRunId, status) =>
   requestp({
     json: true,
     headers: {
@@ -52,27 +38,44 @@ exports.updateCheckRun = (owner, repo, headSha, token, checkRunId, status,
       'name': 'Build',
       'head_sha': headSha,
       status,
-      conclusion,
-      'started_at': '2018-05-04T01:15:52Z',
-      'completed_at': completedAt,
+      'started_at': new Date().toISOString(),
+      'actions': [{
+        'label': 'abort',
+        'identifier': 'abort_build',
+        'description': 'cancel this build'
+      }]
+    }
+  })
+
+exports.abortBuild = (owner, repo, headSha, token, checkRunId) =>
+  requestp({
+    json: true,
+    headers: {
+      'Authorization': 'token ' + token,
+      'User-Agent': process.env.APP_NAME,
+      'Accept': 'application/vnd.github.antiope-preview+json'
+    },
+    method: 'PATCH',
+    url: `https://api.github.com/repos/${owner}/${repo}/check-runs/${checkRunId}`,
+    body: {
+      'name': 'Build',
+      'head_sha': headSha,
+      status: 'completed',
+      conclusion: 'cancelled',
+      'started_at': new Date().toISOString(),
+      'completed_at': new Date().toISOString(),
       'output': {
         'title': 'Build report',
         'summary': 'A summery of the build report',
         'text': 'The console output'
       },
       'actions': [{
-        'label': 'abort',
-        'identifier': 'abort_run',
-        'description': 'cancel this build'
+        'label': 're-run',
+        'identifier': 'rerun_build',
+        'description': 're-run this build'
       }]
     }
-  }).then((response) => {
-    // TODO check for successful response (status code)
-    this.redisClient.hmset(
-      headSha, 'owner', owner, 'repo', repo, 'step', 'build',
-      'check_run_id', checkRunId, 'status', status, 'conclusion',
-      conclusion)
-  }).then(() => this.redisClient.quit())
+  })
 
 exports.main = (req, res) => {
   if (typeof req.body === 'undefined') {
@@ -87,24 +90,24 @@ exports.main = (req, res) => {
         .then(({
           token
         }) => {
-          let status = payload.action
-          let conclusion = ''
-          let completedAt = ''
-          if (status === 'abort_run') {
-            status = 'completed'
-            conclusion = 'cancelled'
-            completedAt = '2018-05-05T01:15:52Z'
+          const status = payload.action
+          if (status === 'abort_build') {
+            return this.abortBuild(
+              payload.owner,
+              payload.repo,
+              payload.head_sha,
+              token,
+              payload.check_run_id)
+          } else {
+            return this.updateCheckRun(
+              payload.owner,
+              payload.repo,
+              payload.head_sha,
+              token,
+              payload.check_run_id,
+              status
+            )
           }
-          return this.updateCheckRun(
-            payload.owner,
-            payload.repo,
-            payload.head_sha,
-            token,
-            payload.check_run_id,
-            status,
-            conclusion,
-            completedAt
-          )
         })
     }
   }
