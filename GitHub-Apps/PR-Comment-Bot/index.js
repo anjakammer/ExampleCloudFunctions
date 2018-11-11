@@ -49,11 +49,7 @@ exports.main = (req, res) => {
         .then(({
           token
         }) => {
-          setTimeout(() => {
-            const fullPreviewUrl = `${process.env.PREVIEW_URL}/${payload.after}`
-            const comment = `Preview Environment is set up: [${fullPreviewUrl}](${fullPreviewUrl})`
-            this.addComment(payload.pull_request.comments_url, comment, token)
-          }, 120000)
+          this.addComment(payload.pull_request.comments_url, process.env.COMMENT, token)
           return res.status(200).send('OK')
         })
     }

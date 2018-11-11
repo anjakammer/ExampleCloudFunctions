@@ -16,4 +16,4 @@ GitHub Events:
 | `APP_NAME`      | Developer or App Name   |
 | `APP_ID`        | GitHub-App Id           |
 | `PRIVATE_KEY`   | GitHub-App Private Key  |
-| `PREVIEW_URL`   | URL to preview Environm.|
+| `COMMENT`       | Comment to send         |
